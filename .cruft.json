@@ -1,0 +1,25 @@
+{
+  "template": "https://github.com/brightway-lca/cookiecutter-brightwaylib",
+  "commit": "ac1e18f4ead224910aab192591e2100a6bd0431d",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "full_name": "Chris Mutel",
+      "email": "cmutel@gmail.com",
+      "github_username": "brightway-lca",
+      "project_name": "simple_regional",
+      "package_name": "simple_regional",
+      "project_short_description": "Simple regional calculations for a shared spatial scale",
+      "version": "0.0.1",
+      "use_pytest": "y",
+      "open_source_license": "MIT",
+      "copyright_year": "2024",
+      "code_of_conduct_contact": "cmutel@gmail.com",
+      "_copy_without_render": [
+        ".github/*"
+      ],
+      "_template": "https://github.com/brightway-lca/cookiecutter-brightwaylib"
+    }
+  },
+  "directory": null
+}
