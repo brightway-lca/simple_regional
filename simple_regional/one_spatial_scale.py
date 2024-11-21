@@ -3,8 +3,10 @@ from functools import partial
 import matrix_utils as mu
 from bw2calc.lca import LCA
 from bw2data import Database, Method, get_activity, methods
-from bw_processing import load_datapackage
+from bw_processing import load_datapackage, DatapackageBase
 from fsspec.implementations.zip import ZipFileSystem
+from fsspec import AbstractFileSystem
+from typing import Callable, Iterable, Optional, Union
 
 
 def dp(fp):
@@ -79,24 +81,36 @@ class OneSpatialScaleLCA(LCA):
             * ``reg_cf_matrix``: The matrix **R**
 
         """
-        self.reg_cf_mm = mu.MappedMatrix(
-            packages=[dp(Method(self.method).filepath_processed())]
-            + self.extra_data_objs,
-            matrix="characterization_matrix",
-            use_arrays=self.use_arrays,
-            use_distributions=self.use_distributions,
-            seed_override=self.seed_override,
-            col_mapper=self.biosphere_mm.row_mapper,
-            row_mapper=row_mapper,
-            transpose=True,
-        )
+        use_arrays, use_distributions = self.check_selective_use("characterization_matrix")
+
+        try:
+            self.reg_cf_mm = mu.MappedMatrix(
+                packages=[dp(Method(self.method).filepath_processed())]
+                + self.extra_data_objs,
+                matrix="characterization_matrix",
+                use_arrays=use_arrays,
+                use_distributions=use_distributions,
+                seed_override=self.seed_override,
+                row_mapper=row_mapper,
+                col_mapper=self.biosphere_mm.row_mapper,
+                transpose=True,
+            )
+        except mu.errors.AllArraysEmpty:
+            raise ValueError("Given `method` or `data_objs` have no characterization data")
+
         self.reg_cf_matrix = self.reg_cf_mm.matrix
         if row_mapper is None:
             self.dicts.ia_spatial = partial(self.reg_cf_mm.row_mapper.to_dict)
 
-    def load_lcia_data(self):
+    def load_lcia_data(
+        self,
+        data_objs: Optional[Iterable[Union[AbstractFileSystem, DatapackageBase]]] = None
+    ) -> None:
         self.create_inventory_mapping_matrix()
-        self.create_regionalized_characterization_matrix(self.inv_mapping_mm.col_mapper)
+        self.create_regionalized_characterization_matrix(row_mapper=self.inv_mapping_mm.col_mapper)
+        self.characterization_matrix = (
+            self.inv_mapping_matrix @ self.reg_cf_matrix
+        ).T
 
     def lcia_calculation(self):
         """Do regionalized LCA calculation.
@@ -104,9 +118,8 @@ class OneSpatialScaleLCA(LCA):
         Creates ``self.characterized_inventory``.
 
         """
-        self.characterized_inventory = (
-            self.inv_mapping_matrix * self.reg_cf_matrix
-        ).T.multiply(self.inventory)
+        # `.multiply()` does elementwise multiplication
+        self.characterized_inventory = self.characterization_matrix.multiply(self.inventory)
 
     def results_ia_spatial_scale(self):
         raise NotImplementedError("No separate IA spatial scale")
