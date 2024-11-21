@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### [1.0.1] - 2024-11-21
+
+Adaptations to make `OneSpatialScaleLCA` behave like the standard `LCA`.
+
 ## [1.0] - 2024-11-07
+
+Initial release.
 
 ### Added
 
